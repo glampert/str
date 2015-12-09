@@ -42,6 +42,14 @@ Str::Str()
 {
 }
 
+Str::~Str()
+{
+    if (owned && !is_using_local_buf())
+    {
+        STR_MEMFREE(data);
+    }
+}
+
 Str::Str(const Str & rhs)
     : Str{} // Delegate to the default constructor (C++11)
 {
@@ -169,8 +177,9 @@ void Str::reserve(int new_capacity)
         STR_MEMFREE(data);
     }
 
-    data = new_data;
+    data         = new_data;
     numAvailable = new_capacity;
+    owned        = true; // To be sure...
 }
 
 void Str::reserve_discard(int new_capacity)
@@ -201,6 +210,11 @@ void Str::reserve_discard(int new_capacity)
         STR_ASSERT(data != nullptr);
         numAvailable = new_capacity;
     }
+
+    // Old contents are lost.
+    data[0] = '\0';
+    len     = 0;
+    owned   = true;
 }
 
 void Str::shrink_to_fit()

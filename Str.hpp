@@ -91,6 +91,7 @@
 // class Str:
 // This is the base class that you can pass around.
 // Footprint is about 16-bytes in a 64-bits architecture.
+// Destructor attempts to free the string if we own it.
 //
 // NOTE: We are taking a shortcut here by not making
 // the class destructor virtual, as a means of avoiding
@@ -128,10 +129,11 @@ public:
         return *this;
     }
 
-    int length() const { return len; }
-    bool empty() const { return data[0] == '\0'; }
-    int capacity() const { return numAvailable; }
-    const char * c_str() const { return data; }
+    int  length()        const { return len; }
+    bool empty()         const { return data[0] == '\0'; }
+    int  capacity()      const { return numAvailable; }
+    bool owns_buffer()   const { return owned; }
+    const char * c_str() const { return data;  }
 
     char & operator[](int i)
     {
@@ -161,23 +163,23 @@ public:
 
     // strcmp-style comparison:
     int compare(const char * rhs) const { return std::strcmp(data, rhs); }
-    int compare(const Str & rhs) const  { return std::strcmp(data, rhs.data); }
+    int compare(const Str & rhs)  const { return std::strcmp(data, rhs.data); }
 
     // Compare ignoring character case (operators are always case-sensitive!):
     int compare_no_case(const char * rhs) const { return STR_CMP_NOCASE(data, rhs); }
-    int compare_no_case(const Str & rhs) const  { return STR_CMP_NOCASE(data, rhs.data); }
+    int compare_no_case(const Str & rhs)  const { return STR_CMP_NOCASE(data, rhs.data); }
 
     // Check for prefix substring:
     bool starts_with(const char * prefix) const;
-    bool starts_with(const Str & prefix) const { return starts_with(prefix.data); }
+    bool starts_with(const Str & prefix)  const { return starts_with(prefix.data); }
 
     // Check for suffix substring:
     bool ends_with(const char * suffix) const;
-    bool ends_with(const Str & suffix) const { return ends_with(suffix.data); }
+    bool ends_with(const Str & suffix)  const { return ends_with(suffix.data); }
 
     // Find characters in string. Returns index or -1 if not found.
     int find_first_occurrence(char c) const;
-    int find_last_occurrence(char c) const;
+    int find_last_occurrence(char c)  const;
 
     // std::string interoperability:
 #if STR_SUPPORT_STD_STRING
@@ -187,6 +189,9 @@ public:
     int compare(const std::string & rhs) const { return std::strcmp(data, rhs.c_str()); }
     int compare_no_case(const std::string & rhs) const { return STR_CMP_NOCASE(data, rhs.c_str()); }
 #endif // STR_SUPPORT_STD_STRING
+
+    // Frees the underlaying buffer if we own it.
+    ~Str();
 
 protected:
 
