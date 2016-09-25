@@ -319,7 +319,7 @@ public:
             return *m_ptr;
         }
 
-        // Post-increment/decrement:
+        // Pre-increment/decrement (++/--i):
         basic_bidirectional_iterator & operator++()
         {
             STR_ASSERT(m_ptr != nullptr);
@@ -335,7 +335,7 @@ public:
             return *this;
         }
 
-        // Pre-increment/decrement:
+        // Post-increment/decrement (i++/--):
         basic_bidirectional_iterator operator++(int)
         {
             STR_ASSERT(m_ptr != nullptr);
