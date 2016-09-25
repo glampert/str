@@ -65,7 +65,7 @@ class str
 {
 public:
 
-     str();
+    str() noexcept;
     ~str();
 
     str(str && rhs) noexcept;
@@ -1111,7 +1111,7 @@ void swap(str & lhs, str & rhs) noexcept
 // class str implementation:
 // ========================================================
 
-str::str()
+str::str() noexcept
     : m_data{ get_empty_dummy_string() }
     , m_length{ 0 }
     , m_capacity{ 0 }
