@@ -443,11 +443,11 @@ protected:
     // Constructor for str_sized<N> variants with a local buffer.
     explicit str(int local_buf_size);
 
-    char *       m_data;                   // Pointer to an inline/local buffer or heap allocated memory.
-    std::int32_t m_length;                 // Current length in chars, not counting the null terminator.
-    std::int32_t m_capacity          : 21; // Allocated capacity in chars. Max 2 MB.
-    std::int32_t m_local_buffer_size : 10; // Size of inline/local storage (SSO), if using any. Max 1023 bytes.
-    std::int32_t m_owns_buffer       : 1;  // True if the data buffer is owned by the str and must be freed.
+    char *        m_data;                   // Pointer to an inline/local buffer or heap allocated memory.
+    std::int32_t  m_length;                 // Current length in chars, not counting the null terminator.
+    std::int32_t  m_capacity          : 21; // Allocated capacity in chars. Max 2 MB.
+    std::int32_t  m_local_buffer_size : 10; // Size of inline/local storage (SSO), if using any. Max 1023 bytes.
+    std::uint32_t m_owns_buffer       : 1;  // True if the data buffer is owned by the str and must be freed.
 };
 
 // ========================================================
@@ -989,7 +989,7 @@ inline bool str::valid() const noexcept
 
 inline bool str::owns_buffer() const noexcept
 {
-    return !!m_owns_buffer; // Double NOT to silence conversion from bool to int warning.
+    return !!m_owns_buffer; // Double NOT to silence conversion from integer bool warning.
 }
 
 inline bool str::using_local_buffer() const noexcept
