@@ -428,6 +428,15 @@ public:
 
 protected:
 
+    // Cast U to T, checking that the value is still the same in case of narrowing.
+    template<typename T, typename U>
+    static T narrow(U u)
+    {
+        const T t = static_cast<T>(u);
+        STR_ASSERT(static_cast<U>(t) == u);
+        return t;
+    }
+
     char * get_local_buffer() const noexcept;
     char * get_empty_dummy_string() const noexcept;
 
@@ -791,7 +800,7 @@ inline void str::set(const char * src, int count)
 
 inline void str::set(const std::string & src)
 {
-    set(src.c_str(), 0, src.length());
+    set(src.c_str(), 0, narrow<int>(src.length()));
 }
 
 inline void str::set(const std::string & src, int count)
@@ -858,7 +867,7 @@ inline void str::append(const char * src, int count)
 
 inline void str::append(const std::string & src)
 {
-    append(src.c_str(), 0, src.length());
+    append(src.c_str(), 0, narrow<int>(src.length()));
 }
 
 inline void str::append(const std::string & src, int count)
@@ -913,7 +922,7 @@ inline bool str::starts_with(const char * prefix) const
 
 inline bool str::starts_with(const std::string & prefix) const
 {
-    return starts_with(prefix.c_str(), prefix.length());
+    return starts_with(prefix.c_str(), narrow<int>(prefix.length()));
 }
 
 inline bool str::ends_with(const str & suffix) const
@@ -928,7 +937,7 @@ inline bool str::ends_with(const char * suffix) const
 
 inline bool str::ends_with(const std::string & suffix) const
 {
-    return ends_with(suffix.c_str(), suffix.length());
+    return ends_with(suffix.c_str(), narrow<int>(suffix.length()));
 }
 
 inline int str::length(const char * str)
@@ -980,7 +989,7 @@ inline bool str::valid() const noexcept
 
 inline bool str::owns_buffer() const noexcept
 {
-    return m_owns_buffer;
+    return !!m_owns_buffer; // Double NOT to silence conversion from bool to int warning.
 }
 
 inline bool str::using_local_buffer() const noexcept
@@ -1412,7 +1421,7 @@ str & str::trim_left()
     int new_len = m_length;
     char * ptr  = str::skip_leading_whitespace(m_data);
 
-    const std::ptrdiff_t displacement = ptr - m_data;
+    const int displacement = narrow<int>(ptr - m_data);
     if (displacement > 0) // Any white space to the left?
     {
         new_len -= displacement;
@@ -1675,7 +1684,11 @@ void str::reserve(int new_capacity, const int dynamic_alloc_extra)
         STR_ASSERT(new_data != nullptr);
     }
 
+#ifdef _MSC_VER
+    strcpy_s(new_data, new_capacity, m_data);
+#else // !_MSC_VER
     std::strcpy(new_data, m_data);
+#endif // MSC_VER
 
     if (m_owns_buffer && !using_local_buffer())
     {
