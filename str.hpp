@@ -836,7 +836,7 @@ inline void str::set_ref(const std::string & src)
 
 inline void str::set_ref(const std::string & src, const int first)
 {
-    STR_ASSERT(first < static_cast<int>(src.length()));
+    STR_ASSERT(first < narrow<int>(src.length()));
     set_ref(src.c_str(), first);
 }
 
@@ -943,7 +943,7 @@ inline bool str::ends_with(const std::string & suffix) const
 inline int str::length(const char * str)
 {
     STR_ASSERT(str != nullptr);
-    return static_cast<int>(std::strlen(str)); // Don't care about 32/64-bits truncation.
+    return narrow<int>(std::strlen(str)); // Don't care about 32/64-bits truncation.
 }
 
 inline int str::compare(const char * a, const char * b)
@@ -989,7 +989,7 @@ inline bool str::valid() const noexcept
 
 inline bool str::owns_buffer() const noexcept
 {
-    return !!m_owns_buffer; // Double NOT to silence conversion from integer bool warning.
+    return !!m_owns_buffer; // Double NOT to silence conversion from integer=>bool warning.
 }
 
 inline bool str::using_local_buffer() const noexcept
@@ -1387,7 +1387,7 @@ int str::find_any_matching_index(const char * charset) const
         }
     }
 
-    const int match_index = static_cast<int>(ptr - start_ptr);
+    const int match_index = narrow<int>(ptr - start_ptr);
     return (match_index >= m_length ? -1 : match_index);
 }
 
@@ -1802,11 +1802,11 @@ int str::copy(char * dest, int dest_size_in_chars, const char * source)
     if (dest_size_in_chars == 0)
     {
         *(--ptr) = '\0';
-        return static_cast<int>(ptr - dest);
+        return narrow<int>(ptr - dest);
     }
 
     // Return the number of chars written to dest (not counting the null terminator).
-    return static_cast<int>(ptr - dest - 1);
+    return narrow<int>(ptr - dest - 1);
 }
 
 int str::copy(char * dest, const int dest_size_in_chars, const char * source, const int chars_to_copy)
@@ -1845,11 +1845,11 @@ int str::copy(char * dest, const int dest_size_in_chars, const char * source, co
     if (chars_available == 0)
     {
         *(--ptr) = '\0';
-        return static_cast<int>(ptr - dest);
+        return narrow<int>(ptr - dest);
     }
 
     // Return the number of chars written to dest (not counting the null terminator).
-    return static_cast<int>(ptr - dest - 1);
+    return narrow<int>(ptr - dest - 1);
 }
 
 int str::append(char * dest, const int dest_size_in_chars, const char * source, int chars_to_append)
