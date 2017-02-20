@@ -190,26 +190,37 @@ void test_str_sized()
     str64  s64;
     str128 s128;
     str256 s256;
+    str512 s512;
 
     STR_ASSERT( s16.length()      == 0    );
     STR_ASSERT( s16.capacity()    == 16   );
     STR_ASSERT( s16.owns_buffer() == true );
+    STR_ASSERT( s16.local_buffer_size() == 16 );
 
     STR_ASSERT( s32.length()      == 0    );
     STR_ASSERT( s32.capacity()    == 32   );
     STR_ASSERT( s32.owns_buffer() == true );
+    STR_ASSERT( s32.local_buffer_size() == 32 );
 
     STR_ASSERT( s64.length()      == 0    );
     STR_ASSERT( s64.capacity()    == 64   );
     STR_ASSERT( s64.owns_buffer() == true );
+    STR_ASSERT( s64.local_buffer_size() == 64 );
 
     STR_ASSERT( s128.length()      == 0    );
     STR_ASSERT( s128.capacity()    == 128  );
     STR_ASSERT( s128.owns_buffer() == true );
+    STR_ASSERT( s128.local_buffer_size() == 128 );
 
     STR_ASSERT( s256.length()      == 0    );
     STR_ASSERT( s256.capacity()    == 256  );
     STR_ASSERT( s256.owns_buffer() == true );
+    STR_ASSERT( s256.local_buffer_size() == 256 );
+
+    STR_ASSERT( s512.length()      == 0    );
+    STR_ASSERT( s512.capacity()    == 512  );
+    STR_ASSERT( s512.owns_buffer() == true );
+    STR_ASSERT( s512.local_buffer_size() == 512 );
 
     //
     // Stress str16 to see if the dynamic alloc works properly:
