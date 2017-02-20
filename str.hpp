@@ -1265,7 +1265,7 @@ bool str::ends_with(const char * suffix, const int suffix_len) const
         return str::compare(m_data, suffix) == 0;
     }
 
-    return str::compare(m_data + m_length - suffix_len, suffix, suffix_len) == 0;
+    return str::compare(m_data + m_length - suffix_len - 1, suffix, suffix_len) == 0;
 }
 
 int str::first_index_of(const char c) const
