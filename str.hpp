@@ -218,6 +218,7 @@ public:
 
     int length()   const noexcept;
     int capacity() const noexcept;
+    int local_buffer_size() const noexcept;
 
     bool empty() const noexcept;
     bool valid() const noexcept;
@@ -445,8 +446,8 @@ protected:
 
     char *        m_data;                   // Pointer to an inline/local buffer or heap allocated memory.
     std::int32_t  m_length;                 // Current length in chars, not counting the null terminator.
-    std::int32_t  m_capacity          : 21; // Allocated capacity in chars. Max 2 MB.
-    std::int32_t  m_local_buffer_size : 10; // Size of inline/local storage (SSO), if using any. Max 1023 bytes.
+    std::uint32_t m_capacity          : 21; // Allocated capacity in chars. Max 2 MB.
+    std::uint32_t m_local_buffer_size : 10; // Size of inline/local storage (SSO), if using any. Max 1023 bytes.
     std::uint32_t m_owns_buffer       : 1;  // True if the data buffer is owned by the str and must be freed.
 };
 
@@ -974,7 +975,12 @@ inline int str::length() const noexcept
 
 inline int str::capacity() const noexcept
 {
-    return m_capacity;
+    return static_cast<int>(m_capacity);
+}
+
+inline int str::local_buffer_size() const noexcept
+{
+    return static_cast<int>(m_local_buffer_size);
 }
 
 inline bool str::empty() const noexcept
@@ -994,7 +1000,7 @@ inline bool str::owns_buffer() const noexcept
 
 inline bool str::using_local_buffer() const noexcept
 {
-    return m_data == get_local_buffer() && m_local_buffer_size != 0;
+    return m_data == get_local_buffer() && local_buffer_size() > 0;
 }
 
 inline const char * str::c_str() const noexcept
@@ -1132,8 +1138,8 @@ str::str() noexcept
 str::str(const int local_buf_size)
     : m_data{ get_local_buffer() }
     , m_length{ 0 }
-    , m_capacity{ local_buf_size }
-    , m_local_buffer_size{ local_buf_size }
+    , m_capacity{ static_cast<std::uint32_t>(local_buf_size) }
+    , m_local_buffer_size{ static_cast<std::uint32_t>(local_buf_size) }
     , m_owns_buffer{ true }
 {
     // Already static_asserted in str_sized, but doesn't harm to check again...
@@ -1176,7 +1182,7 @@ void str::set(const char * src, const int first, const int count)
     }
 
     const int chars_needed = count + 1;
-    if (m_capacity < chars_needed)
+    if (capacity() < chars_needed)
     {
         reserve_discard(chars_needed);
     }
@@ -1226,7 +1232,7 @@ void str::append(const char * src, const int first, const int count)
     }
 
     const int chars_needed = m_length + count + 1;
-    if (m_capacity < chars_needed)
+    if (capacity() < chars_needed)
     {
         reserve(chars_needed);
     }
@@ -1265,7 +1271,8 @@ bool str::ends_with(const char * suffix, const int suffix_len) const
         return str::compare(m_data, suffix) == 0;
     }
 
-    return str::compare(m_data + m_length - suffix_len - 1, suffix, suffix_len) == 0;
+    const char * startPtr = m_data + m_length - suffix_len;
+    return str::compare(startPtr, suffix, suffix_len) == 0;
 }
 
 int str::first_index_of(const char c) const
@@ -1501,15 +1508,15 @@ bool str::setfv(const char * fmt, va_list args)
 #ifdef _MSC_VER
     int result = std::vsnprintf(nullptr, 0, fmt, args);
     STR_ASSERT(result >= 0);
-    if (m_capacity < result + 1)
+    if (capacity() < result + 1)
     {
         reserve_discard(result + 1);
     }
     result = std::vsnprintf(m_data, result + 1, fmt, args2);
 #else // !_MSC_VER
-    int result = std::vsnprintf(m_owns_buffer ? m_data : nullptr, m_owns_buffer ? m_capacity : 0, fmt, args);
+    int result = std::vsnprintf(m_owns_buffer ? m_data : nullptr, m_owns_buffer ? capacity() : 0, fmt, args);
     STR_ASSERT(result >= 0);
-    if (m_capacity < result + 1)
+    if (capacity() < result + 1)
     {
         reserve_discard(result + 1);
         result = std::vsnprintf(m_data, result + 1, fmt, args2);
@@ -1533,16 +1540,16 @@ bool str::setfv_no_grow(const char * fmt, va_list args)
 {
     STR_ASSERT(fmt != nullptr);
 
-    int result = std::vsnprintf(m_data, m_capacity, fmt, args);
+    int result = std::vsnprintf(m_data, capacity(), fmt, args);
     if (result < 0)
     {
         clear_no_free();
         return false;
     }
 
-    if (result >= m_capacity)
+    if (result >= capacity())
     {
-        result = m_capacity - 1;
+        result = capacity() - 1;
         // Overflowed the string, but still succeeds.
     }
 
@@ -1579,16 +1586,16 @@ bool str::appendfv(const char * fmt, va_list args)
     int add_len = std::vsnprintf(nullptr, 0, fmt, args);
     STR_ASSERT(add_len >= 0);
 
-    if (m_capacity < cur_len + add_len + 1)
+    if (capacity() < cur_len + add_len + 1)
     {
         reserve(cur_len + add_len + 1);
     }
 
     add_len = std::vsnprintf(m_data + cur_len, add_len + 1, fmt, args2);
 #else // !_MSC_VER
-    int add_len = std::vsnprintf(m_owns_buffer ? m_data + cur_len : nullptr, m_owns_buffer ? m_capacity - cur_len : 0, fmt, args);
+    int add_len = std::vsnprintf(m_owns_buffer ? m_data + cur_len : nullptr, m_owns_buffer ? capacity() - cur_len : 0, fmt, args);
     STR_ASSERT(add_len >= 0);
-    if (m_capacity < cur_len + add_len + 1)
+    if (capacity() < cur_len + add_len + 1)
     {
         reserve(cur_len + add_len + 1);
         add_len = std::vsnprintf(m_data + cur_len, add_len + 1, fmt, args2);
@@ -1617,7 +1624,7 @@ void str::clear()
         STR_MEM_FREE(m_data);
     }
 
-    if (m_local_buffer_size > 0) // Have a local buffer?
+    if (local_buffer_size() > 0) // Have a local buffer?
     {
         m_data        = get_local_buffer();
         m_data[0]     = '\0';
@@ -1642,7 +1649,7 @@ void str::shrink_to_fit()
     }
 
     const int new_capacity = m_length + 1;
-    if (m_capacity <= new_capacity)
+    if (capacity() <= new_capacity)
     {
         return;
     }
@@ -1663,18 +1670,18 @@ void str::reserve(int new_capacity, const int dynamic_alloc_extra)
 {
     STR_ASSERT(dynamic_alloc_extra >= 0);
 
-    if (new_capacity <= m_capacity)
+    if (new_capacity <= capacity())
     {
         return;
     }
 
     // Reserve memory, preserving the current contents of the string buffer.
     char * new_data;
-    if (new_capacity < m_local_buffer_size)
+    if (new_capacity < local_buffer_size())
     {
         // Disowned -> local buffer
         new_data     = get_local_buffer();
-        new_capacity = m_local_buffer_size;
+        new_capacity = local_buffer_size();
     }
     else
     {
@@ -1708,7 +1715,7 @@ void str::reserve_discard(int new_capacity, const int dynamic_alloc_extra)
     // Reserve memory, discarding the current contents of the
     // string buffer (useful if we expect it to be fully overwritten).
 
-    if (new_capacity <= m_capacity)
+    if (new_capacity <= capacity())
     {
         return;
     }
@@ -1719,11 +1726,11 @@ void str::reserve_discard(int new_capacity, const int dynamic_alloc_extra)
         STR_MEM_FREE(m_data);
     }
 
-    if (new_capacity < m_local_buffer_size)
+    if (new_capacity < local_buffer_size())
     {
         // Disowned -> local buffer
         m_data     = get_local_buffer();
-        m_capacity = m_local_buffer_size;
+        m_capacity = local_buffer_size();
     }
     else
     {
